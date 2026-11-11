@@ -17,24 +17,26 @@ export function MatrixRenderer({ name, rows }: Props) {
           matrix {rows.length}×{rows[0]?.length ?? 0}
         </span>
       </div>
-      <div className="matrix-grid">
-        {shown.map((row, r) => (
-          <div key={`r-${r}`} className="matrix-row">
-            <span className="matrix-row-label">{r}</span>
-            {row.map((cell, c) => (
-              <div
-                key={`c-${r}-${c}`}
-                className="matrix-cell cell-3d"
-                style={{ animationDelay: `${(r * 8 + c) * 20}ms` }}
-              >
-                <div className="array-index">
-                  {r},{c}
+      <div className="array-scroll" tabIndex={0} aria-label={`${name} matrix`}>
+        <div className="matrix-grid">
+          {shown.map((row, r) => (
+            <div key={`r-${r}`} className="matrix-row">
+              <span className="matrix-row-label">{r}</span>
+              {row.map((cell, c) => (
+                <div
+                  key={`c-${r}-${c}`}
+                  className="matrix-cell cell-3d"
+                  style={{ animationDelay: `${(r * 8 + c) * 20}ms` }}
+                >
+                  <div className="array-index">
+                    {r},{c}
+                  </div>
+                  <div className="array-value">{formatValue(cell)}</div>
                 </div>
-                <div className="array-value">{formatValue(cell)}</div>
-              </div>
-            ))}
-          </div>
-        ))}
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

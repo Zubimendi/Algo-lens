@@ -16,26 +16,29 @@ export function WhatChanged({ changes }: Props) {
       ) : (
         <div className="change-list">
           {changes.map((c) => (
-            <span key={`${c.name}-${c.kind}`} className="change-chip">
+            <div key={`${c.name}-${c.kind}`} className="change-chip">
               <strong>{c.name}</strong>
               {c.kind === "added" && (
                 <>
                   {" "}
-                  added → {formatValue(c.after)}
+                  added → <span className="value-wrap">{formatValue(c.after)}</span>
                 </>
               )}
               {c.kind === "removed" && (
                 <>
                   {" "}
-                  removed ({formatValue(c.before)})
+                  removed (
+                  <span className="value-wrap">{formatValue(c.before)}</span>)
                 </>
               )}
               {c.kind === "changed" && (
                 <>
-                  : {formatValue(c.before)} → {formatValue(c.after)}
+                  : <span className="value-wrap">{formatValue(c.before)}</span>
+                  {" → "}
+                  <span className="value-wrap">{formatValue(c.after)}</span>
                 </>
               )}
-            </span>
+            </div>
           ))}
         </div>
       )}

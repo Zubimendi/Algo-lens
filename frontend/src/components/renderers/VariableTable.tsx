@@ -16,32 +16,38 @@ export function VariableTable({ locals, changes, muteUnchanged }: Props) {
   return (
     <div className="renderer-block">
       <div className="renderer-title">Variables</div>
-      <table className="var-table">
-        <thead>
-          <tr>
-            <th>name</th>
-            <th>type</th>
-            <th>value</th>
-          </tr>
-        </thead>
-        <tbody>
-          {names.map((name) => {
-            const tv = locals[name];
-            const isChanged = changed.has(name);
-            const muted = muteUnchanged && !isChanged;
-            return (
-              <tr
-                key={name}
-                className={`${isChanged ? "flash" : ""} ${muted ? "muted" : ""}`}
-              >
-                <td>{name}</td>
-                <td>{tv.type}</td>
-                <td>{formatValue(plainFromTyped(tv))}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="table-scroll">
+        <table className="var-table">
+          <thead>
+            <tr>
+              <th>name</th>
+              <th>type</th>
+              <th>value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {names.map((name) => {
+              const tv = locals[name];
+              const isChanged = changed.has(name);
+              const muted = muteUnchanged && !isChanged;
+              return (
+                <tr
+                  key={name}
+                  className={`${isChanged ? "flash" : ""} ${muted ? "muted" : ""}`}
+                >
+                  <td>{name}</td>
+                  <td>{tv.type}</td>
+                  <td>
+                    <code className="value-wrap">
+                      {formatValue(plainFromTyped(tv))}
+                    </code>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

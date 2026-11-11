@@ -14,10 +14,10 @@ export function LinkedListRenderer({ name, nodes, pointers }: Props) {
   return (
     <div className="renderer-block">
       <div className="renderer-title">
-        {name} <span className="type-tag">linked list</span>
+        {name} <span className="type-tag">linked list · {nodes.length}</span>
       </div>
-      <div className="structure-stage">
-        <div className="ll-row-3d">
+      <div className="array-scroll" tabIndex={0} aria-label={`${name} linked list`}>
+        <div className="ll-track">
           {shown.length === 0 && <div className="ll-null">None</div>}
           {shown.map((val, idx) => {
             const labels = Object.entries(pointers)
@@ -27,7 +27,7 @@ export function LinkedListRenderer({ name, nodes, pointers }: Props) {
               <div key={`${name}-node-${idx}`} className="node-3d">
                 <div
                   className="node-3d-face"
-                  style={{ animationDelay: `${idx * 40}ms` }}
+                  style={{ animationDelay: `${Math.min(idx, 12) * 40}ms` }}
                 >
                   {formatValue(val)}
                 </div>
@@ -47,6 +47,9 @@ export function LinkedListRenderer({ name, nodes, pointers }: Props) {
           {shown.length > 0 && <div className="ll-null">None</div>}
         </div>
       </div>
+      {nodes.length > 5 && (
+        <div className="scroll-hint muted">Scroll sideways to see every node</div>
+      )}
     </div>
   );
 }

@@ -12,17 +12,19 @@ export function QueueRenderer({ name, items }: Props) {
   return (
     <div className="renderer-block">
       <div className="renderer-title">
-        {name} <span className="type-tag">queue</span>
+        {name} <span className="type-tag">queue · {items.length}</span>
       </div>
-      <div className="queue-row">
-        <span className="queue-end">front</span>
-        {shown.length === 0 && <span className="muted">empty</span>}
-        {shown.map((item, idx) => (
-          <div key={`${name}-q-${idx}`} className="queue-cell">
-            {formatValue(item)}
-          </div>
-        ))}
-        <span className="queue-end">back</span>
+      <div className="array-scroll" tabIndex={0} aria-label={`${name} queue`}>
+        <div className="queue-row">
+          <span className="queue-end">front</span>
+          {shown.length === 0 && <span className="muted">empty</span>}
+          {shown.map((item, idx) => (
+            <div key={`${name}-q-${idx}`} className="queue-cell">
+              {formatValue(item)}
+            </div>
+          ))}
+          <span className="queue-end">back</span>
+        </div>
       </div>
     </div>
   );

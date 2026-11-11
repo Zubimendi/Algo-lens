@@ -138,9 +138,10 @@ button.primary,
 }
 
 .app-shell {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1.25rem 1.25rem 4rem;
+  padding: 1.25rem clamp(0.75rem, 2.5vw, 1.25rem) 4rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -184,7 +185,8 @@ button.primary,
 }
 
 .field select {
-  min-width: 9.5rem;
+  min-width: min(9.5rem, 100%);
+  max-width: 100%;
   padding: 0.4rem 0.5rem;
   border-radius: 8px;
   border: 1px solid var(--line);
@@ -201,7 +203,8 @@ button.primary,
   border: 1px solid var(--line);
   border-radius: 18px;
   box-shadow: var(--shadow);
-  overflow: hidden;
+  overflow: visible;
+  min-width: 0;
 }
 
 .section-header {
@@ -400,20 +403,15 @@ button.primary,
 
 .viz-main {
   display: grid;
-  grid-template-columns: 1fr 1.05fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
   min-height: 340px;
   border-bottom: 1px solid var(--line);
-}
-
-@media (max-width: 900px) {
-  .viz-main {
-    grid-template-columns: 1fr;
-  }
 }
 
 .code-panel,
 .viz-right {
   padding: 0.85rem 1rem;
+  min-width: 0;
 }
 
 .code-panel {
@@ -501,6 +499,7 @@ button.primary,
 
 .viz-right {
   background: var(--panel);
+  overflow: hidden;
 }
 
 .visual-state {
@@ -508,9 +507,9 @@ button.primary,
   flex-direction: column;
   gap: 0.95rem;
   margin-top: 0.55rem;
-  max-height: 380px;
+  max-height: min(56vh, 520px);
   overflow: auto;
-  perspective: 900px;
+  overscroll-behavior: contain;
 }
 
 .renderer-block {
@@ -518,7 +517,8 @@ button.primary,
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 0.75rem 0.85rem;
-  transform-style: preserve-3d;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .renderer-title {
@@ -544,26 +544,54 @@ button.primary,
   color: var(--brand);
 }
 
-/* ── 3D structure stage ──────────────────────────────────────── */
-.structure-stage {
-  perspective: 1000px;
-  padding: 0.35rem 0.15rem 0.55rem;
+/* ── Scrollable structure tracks ─────────────────────────────── */
+.array-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  padding: 0.45rem 0.15rem 0.65rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
 }
 
-.structure-row-3d {
+.array-scroll:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.array-track,
+.ll-track {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
+  flex-wrap: nowrap;
+  gap: 0.55rem;
   align-items: flex-end;
-  transform: rotateX(12deg) rotateY(-6deg);
-  transform-style: preserve-3d;
-  min-height: 4.5rem;
+  width: max-content;
+  min-width: 100%;
+  padding-bottom: 0.25rem;
+}
+
+.array-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+}
+
+.scroll-hint {
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
 }
 
 .cell-3d,
 .node-3d {
   position: relative;
   min-width: 3.1rem;
+  max-width: 9rem;
+  flex: 0 0 auto;
   transform-style: preserve-3d;
   transition:
     transform 280ms ease,
@@ -623,13 +651,8 @@ tr.flash {
   padding: 0.45rem 0.4rem;
   font-family: var(--font-mono);
   font-size: 0.8rem;
-}
-
-.pointer-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-  margin-top: 0.35rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .pointer-slot {
@@ -660,26 +683,20 @@ tr.flash {
   }
 }
 
-/* Linked list 3D */
-.ll-row-3d {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  align-items: center;
-  transform: rotateX(10deg) rotateY(-8deg);
-  transform-style: preserve-3d;
-  padding: 0.5rem 0.2rem 0.8rem;
-}
-
 .node-3d {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 0.25rem;
+  flex: 0 0 auto;
+  position: relative;
+  padding-bottom: 1.15rem;
+  max-width: none;
 }
 
 .node-3d-face {
   min-width: 3rem;
+  max-width: 8rem;
   text-align: center;
   padding: 0.55rem 0.7rem;
   border-radius: 12px;
@@ -688,14 +705,24 @@ tr.flash {
   background: linear-gradient(160deg, var(--node-face), var(--node-depth));
   border: 1px solid var(--node-edge);
   box-shadow:
-    0 10px 0 color-mix(in srgb, var(--node-depth) 85%, #000),
-    0 14px 20px rgba(0, 0, 0, 0.14);
+    0 8px 0 color-mix(in srgb, var(--node-depth) 85%, #000),
+    0 12px 18px rgba(0, 0, 0, 0.14);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ll-pointers {
+  position: absolute;
+  top: calc(100% + 0.15rem);
+  left: 0;
+  right: auto;
+  white-space: nowrap;
 }
 
 .ll-arrow-3d {
   color: var(--brand);
   font-size: 1.1rem;
-  transform: translateY(-0.4rem);
+  flex: 0 0 auto;
   text-shadow: 0 2px 0 var(--node-depth);
 }
 
@@ -727,14 +754,15 @@ tr.flash {
   flex-direction: column;
   gap: 0.35rem;
   overflow: auto;
-  transform: rotateX(8deg);
-  transform-origin: top center;
+  max-width: 100%;
 }
 
 .matrix-row {
   display: flex;
   align-items: stretch;
   gap: 0.35rem;
+  width: max-content;
+  min-width: 100%;
 }
 
 .matrix-row-label {
@@ -755,15 +783,20 @@ tr.flash {
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
-  align-items: center;
-  transform: rotateX(8deg);
+  align-items: stretch;
+  overflow-x: auto;
+  max-width: 100%;
+  padding-bottom: 0.25rem;
 }
 
 .tree-level {
   display: flex;
   gap: 0.55rem;
   justify-content: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  width: max-content;
+  min-width: 100%;
+  margin: 0 auto;
 }
 
 .tree-node {
@@ -792,9 +825,8 @@ tr.flash {
   flex-direction: column;
   align-items: center;
   gap: 0.3rem;
-  max-width: 11rem;
-  transform: rotateY(-12deg) rotateX(8deg);
-  transform-style: preserve-3d;
+  max-width: min(11rem, 100%);
+  margin: 0 auto;
 }
 
 .stack-cell {
@@ -819,10 +851,11 @@ tr.flash {
 
 .queue-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.4rem;
-  transform: rotateX(10deg);
+  width: max-content;
+  min-width: 100%;
 }
 
 .queue-cell {
@@ -840,11 +873,19 @@ tr.flash {
   font-size: 0.78rem;
 }
 
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .dict-table,
 .var-table {
   width: 100%;
+  min-width: 280px;
   border-collapse: collapse;
   font-size: 0.85rem;
+  table-layout: fixed;
 }
 
 .dict-table th,
@@ -855,24 +896,44 @@ tr.flash {
   text-align: left;
   padding: 0.35rem 0.4rem;
   font-family: var(--font-mono);
+  vertical-align: top;
+}
+
+.var-table th:nth-child(1),
+.var-table td:nth-child(1) {
+  width: 22%;
+}
+
+.var-table th:nth-child(2),
+.var-table td:nth-child(2) {
+  width: 16%;
+}
+
+.var-table th:nth-child(3),
+.var-table td:nth-child(3) {
+  width: 62%;
+}
+
+.value-wrap {
+  display: inline;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 /* Teaching panels */
 .teach-grid {
   display: grid;
-  grid-template-columns: 1fr 1.2fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
   border-top: 1px solid var(--line);
-}
-
-@media (max-width: 800px) {
-  .teach-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .what-changed,
 .explain-panel {
   padding: 1rem 1.15rem;
+  min-width: 0;
 }
 
 .what-changed {
@@ -886,19 +947,23 @@ tr.flash {
 
 .change-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
   margin-top: 0.45rem;
 }
 
 .change-chip {
   background: color-mix(in srgb, var(--flash) 55%, var(--panel));
   border: 1px solid color-mix(in srgb, var(--flash) 80%, var(--line));
-  border-radius: 999px;
-  padding: 0.28rem 0.7rem;
+  border-radius: 12px;
+  padding: 0.45rem 0.7rem;
   font-family: var(--font-mono);
   font-size: 0.8rem;
   animation: riseIn 320ms ease both;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .explain-panel p {
@@ -928,9 +993,120 @@ tr.flash {
 .result-bar code {
   font-family: var(--font-mono);
   font-size: 0.9rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .collapse-toggle {
   margin-left: auto;
   font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .viz-main {
+    grid-template-columns: 1fr;
+  }
+
+  .code-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .teach-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .what-changed {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .playback-bar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .brand {
+    font-size: 1.55rem;
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .top-controls {
+    width: 100%;
+  }
+
+  .field {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: 8rem;
+  }
+
+  .field select {
+    width: 100%;
+  }
+
+  .section-header,
+  .section-body {
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+  }
+
+  .section-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .visual-state {
+    max-height: min(60vh, 480px);
+  }
+
+  .code-pre {
+    max-height: 280px;
+    font-size: 0.78rem;
+  }
+
+  .section-actions {
+    justify-content: stretch;
+  }
+
+  .section-actions button {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-shell {
+    padding: 0.75rem 0.65rem 3rem;
+    gap: 0.85rem;
+  }
+
+  .app-section {
+    border-radius: 14px;
+  }
+
+  .field {
+    flex: 1 1 100%;
+  }
+
+  .playback-buttons {
+    width: 100%;
+  }
+
+  .playback-buttons button {
+    flex: 1 1 auto;
+  }
+
+  .step-counter {
+    text-align: center;
+  }
 }
