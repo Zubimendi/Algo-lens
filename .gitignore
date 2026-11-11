@@ -1,0 +1,18 @@
+# Python
+backend/.venv/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/.pytest_cache/
+*.egg-info/
+
+# Node / Next
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env*.local
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
