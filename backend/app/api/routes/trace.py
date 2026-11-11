@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
+from app.languages import SUPPORTED_LANGUAGES
 from app.problems import get_problem, get_templates, list_problems
 from app.schemas.trace import (
     ProblemDetail,
@@ -20,6 +21,11 @@ router = APIRouter()
 @router.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@router.get("/api/v1/languages")
+def languages() -> list[dict[str, str]]:
+    return list(SUPPORTED_LANGUAGES.values())
 
 
 @router.get("/api/v1/problems", response_model=list[ProblemSummary])
@@ -57,6 +63,7 @@ def trace(req: TraceRequest) -> TraceResponse:
             problem_id=req.problemId,
             templates=templates,
             problem_meta=meta,
+            language=req.language,
         )
     except ValidationError as e:
         raise HTTPException(

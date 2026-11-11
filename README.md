@@ -15,6 +15,7 @@ Paste a Python solution and a test input, press Run, then step through every lin
 | **Custom paste → Run → visualize** any Python `Solution` / function | Done |
 | Syntax / validation errors surfaced before (or instead of) a trace | Done |
 | Dynamic line explanations from AST + real runtime values | Done |
+| Syntax highlighting + comments/docstrings (language-ready) | Done |
 | Optional golden example packs (richer hand-authored explanations) | Done |
 | Structure renderers (auto-detected) | Done — see below |
 | Beginner / Standard teaching modes | Done |
@@ -219,6 +220,10 @@ Lists golden problem summaries (`id`, `title`, `description`, `rendererFocus`).
 
 Full pack: starter code + examples.
 
+### `GET /api/v1/languages`
+
+Lists languages the UI can select. Python is supported now; others are marked `coming_soon` so the highlighter/editor can grow without API churn.
+
 ### `POST /api/v1/trace`
 
 Run and annotate a solution.
@@ -229,13 +234,15 @@ Run and annotate a solution.
 {
   "code": "class Solution:\n    def isAnagram(self, s: str, t: str) -> bool:\n        ...",
   "input": { "s": "anagram", "t": "nagaram" },
-  "problemId": "valid-anagram"
+  "problemId": "valid-anagram",
+  "language": "python"
 }
 ```
 
-- `code` — Python `Solution` method or top-level function  
+- `code` — Python `Solution` method or top-level function (comments/docstrings OK; markdown \`\`\` fences are stripped)  
 - `input` — JSON object **or** kwargs-style string, e.g. `words=["a","b"], maxWidth=16`  
 - `problemId` — optional; when set to a golden id, hand templates are applied  
+- `language` — defaults to `python`; other ids are reserved for later runtimes  
 
 **Response (shape)**
 

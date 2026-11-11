@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Source_Sans_3, IBM_Plex_Mono } from "next/font/google";
+import { ThemeProvider } from "@/lib/theme";
 import "./globals.css";
 
 const display = Fraunces({
@@ -24,13 +25,28 @@ export const metadata: Metadata = {
     "Interactive visual debugger that teaches LeetCode solutions line by line.",
 };
 
+const themeBootScript = `
+(function(){
+  try {
+    var t = localStorage.getItem('algolens-theme');
+    if (t !== 'light' && t !== 'dark') {
+      t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
       <body
         className={`${display.variable} ${body.variable} ${mono.variable} antialiased`}
         style={
@@ -41,7 +57,7 @@ export default function RootLayout({
           } as React.CSSProperties
         }
       >
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

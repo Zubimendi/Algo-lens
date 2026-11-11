@@ -52,11 +52,13 @@ class TraceRequest(BaseModel):
     code: str
     input: dict[str, Any] | str = Field(default_factory=dict)
     problemId: Optional[str] = None
+    language: str = "python"
 
 
 class TraceResponse(BaseModel):
     schemaVersion: int = 1
     problem: Optional[dict[str, str]] = None
+    language: str = "python"
     code: str
     input: dict[str, Any]
     steps: list[Step]

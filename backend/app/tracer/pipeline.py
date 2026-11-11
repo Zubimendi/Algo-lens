@@ -9,11 +9,17 @@ from app.schemas.trace import (
     TraceResponse,
     TypedValue,
 )
+from app.languages import normalize_language
+from app.languages.python_lang import (
+    is_comment_or_blank_line,
+    is_docstring_only_line,
+    sanitize_pasted_code,
+)
 from app.tracer.annotator import annotate_steps
 from app.tracer.differ import diff_locals
 from app.tracer.normalizer import Normalizer
 from app.tracer.sandbox import run_in_sandbox
-from app.tracer.validate import find_entry_method, parse_input, validate_code
+from app.tracer.validate import ValidationError, find_entry_method, parse_input, validate_code
 
 
 def build_trace(
@@ -23,10 +29,19 @@ def build_trace(
     templates: dict[int, dict[str, str]] | None = None,
     problem_meta: dict[str, str] | None = None,
     step_cap: int | None = None,
+    language: str | None = "python",
 ) -> TraceResponse:
+    lang = normalize_language(language)
+    if lang != "python":
+        raise ValidationError(
+            f"Language '{lang}' is not supported yet. Use Python for this MVP."
+        )
+
+    code = sanitize_pasted_code(code)
     validate_code(code)
     kwargs = parse_input(raw_input)
     entry = find_entry_method(code)
+    source_lines = code.splitlines()
 
     sandbox_kwargs: dict[str, Any] = {}
     if step_cap is not None:
@@ -42,6 +57,15 @@ def build_trace(
         event = raw_step.get("event", "line")
         if event not in {"line", "return"}:
             continue
+
+        line_no = int(raw_step.get("line") or 0)
+        if 0 < line_no <= len(source_lines):
+            src = source_lines[line_no - 1]
+            # Comments are never executed; skip stray/docstring-only noise steps
+            if event == "line" and (
+                is_comment_or_blank_line(src) or is_docstring_only_line(src)
+            ):
+                continue
 
         normalizer.reset()  # fresh ids per step for clarity in MVP
         # Re-hydrate linked list markers into normalizer-friendly shapes
@@ -102,6 +126,7 @@ def build_trace(
     return TraceResponse(
         schemaVersion=1,
         problem=problem_meta,
+        language=lang,
         code=code,
         input=kwargs,
         steps=model_steps,

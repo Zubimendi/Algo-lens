@@ -22,7 +22,11 @@ export function MatrixRenderer({ name, rows }: Props) {
           <div key={`r-${r}`} className="matrix-row">
             <span className="matrix-row-label">{r}</span>
             {row.map((cell, c) => (
-              <div key={`c-${r}-${c}`} className="matrix-cell">
+              <div
+                key={`c-${r}-${c}`}
+                className="matrix-cell cell-3d"
+                style={{ animationDelay: `${(r * 8 + c) * 20}ms` }}
+              >
                 <div className="array-index">
                   {r},{c}
                 </div>

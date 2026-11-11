@@ -32,19 +32,30 @@ export function PlaybackBar({
   return (
     <div className="playback-bar">
       <div className="playback-buttons">
-        <button type="button" onClick={onFirst} disabled={disabled}>
-          |&lt;
+        <button type="button" onClick={onFirst} disabled={disabled} title="First step">
+          First
         </button>
-        <button type="button" onClick={onPrev} disabled={disabled}>
-          &lt;
+        <button type="button" onClick={onPrev} disabled={disabled} title="Previous step (←)">
+          Prev
         </button>
-        <button type="button" className="primary" onClick={onNext} disabled={disabled}>
-          Next &gt;
+        <button
+          type="button"
+          className="primary"
+          onClick={onNext}
+          disabled={disabled}
+          title="Next step (→)"
+        >
+          Next step
         </button>
-        <button type="button" onClick={onLast} disabled={disabled}>
-          &gt;|
+        <button type="button" onClick={onLast} disabled={disabled} title="Last step">
+          Last
         </button>
-        <button type="button" onClick={onTogglePlay} disabled={disabled}>
+        <button
+          type="button"
+          onClick={onTogglePlay}
+          disabled={disabled}
+          title="Play / Pause (Space)"
+        >
           {playing ? "Pause" : "Play"}
         </button>
         <label className="speed">
@@ -68,6 +79,7 @@ export function PlaybackBar({
         value={total ? index : 0}
         onChange={(e) => onScrub(Number(e.target.value))}
         disabled={disabled}
+        aria-label="Step scrubber"
       />
       <div className="step-counter">
         Step {total ? index + 1 : 0} / {total}

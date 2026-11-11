@@ -5,6 +5,8 @@ import json
 import re
 from typing import Any
 
+from app.languages.python_lang import sanitize_pasted_code as sanitize_pasted_code
+
 
 class ValidationError(Exception):
     def __init__(self, message: str) -> None:
@@ -13,6 +15,7 @@ class ValidationError(Exception):
 
 
 def validate_code(code: str) -> ast.Module:
+    code = sanitize_pasted_code(code)
     if not code or not code.strip():
         raise ValidationError(
             "Code is empty. Paste a Python Solution class or a top-level function, "
@@ -62,6 +65,7 @@ def _format_syntax_error(code: str, err: SyntaxError) -> str:
 
 def find_entry_method(code: str) -> tuple[str, str]:
     """Return (kind, name) where kind is 'method' or 'function'."""
+    code = sanitize_pasted_code(code)
     tree = validate_code(code)
     for node in tree.body:
         if isinstance(node, ast.ClassDef) and node.name == "Solution":

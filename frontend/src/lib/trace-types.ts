@@ -33,6 +33,7 @@ export type Step = {
 export type TraceResponse = {
   schemaVersion: number;
   problem?: { id: string; title: string } | null;
+  language?: string;
   code: string;
   input: Record<string, unknown>;
   steps: Step[];

@@ -38,6 +38,7 @@ export function runTrace(body: {
   code: string;
   input: Record<string, unknown> | string;
   problemId?: string | null;
+  language?: string;
 }): Promise<TraceResponse> {
   return request("/api/v1/trace", {
     method: "POST",

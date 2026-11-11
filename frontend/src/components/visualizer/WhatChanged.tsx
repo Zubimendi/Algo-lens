@@ -10,7 +10,7 @@ type Props = {
 export function WhatChanged({ changes }: Props) {
   return (
     <div className="what-changed">
-      <div className="panel-label">What changed</div>
+      <div className="panel-label">What changed this step</div>
       {changes.length === 0 ? (
         <div className="muted">No variable changes this step.</div>
       ) : (
