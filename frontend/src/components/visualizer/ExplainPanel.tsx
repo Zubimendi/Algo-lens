@@ -13,7 +13,7 @@ export function ExplainPanel({ explain, mode, line, lineText }: Props) {
   if (!explain) {
     return (
       <div className="explain-panel">
-        <div className="panel-label">Explain this line</div>
+        <div className="panel-label">Why this line</div>
         <div className="muted">Run a trace to see explanations.</div>
       </div>
     );
@@ -22,10 +22,10 @@ export function ExplainPanel({ explain, mode, line, lineText }: Props) {
   if (mode === "beginner") {
     return (
       <div className="explain-panel beginner">
-        <div className="panel-label">Beginner walkthrough</div>
+        <div className="panel-label">Why this line (beginner)</div>
         <ol className="beginner-steps">
           <li>
-            <strong>Current line</strong>
+            <strong>Code</strong>
             <div>
               {line != null ? (
                 <code>
@@ -37,15 +37,15 @@ export function ExplainPanel({ explain, mode, line, lineText }: Props) {
             </div>
           </li>
           <li>
-            <strong>What the line does</strong>
+            <strong>In plain English</strong>
             <div>{explain.what}</div>
           </li>
           <li>
-            <strong>With current values</strong>
+            <strong>With the numbers from this step</strong>
             <div>{explain.withValues}</div>
           </li>
           <li>
-            <strong>Why this step exists</strong>
+            <strong>Role in the algorithm</strong>
             <div>{explain.why}</div>
           </li>
         </ol>
@@ -55,7 +55,7 @@ export function ExplainPanel({ explain, mode, line, lineText }: Props) {
 
   return (
     <div className="explain-panel">
-      <div className="panel-label">Explain this line</div>
+      <div className="panel-label">Why this line</div>
       <p>{explain.withValues}</p>
       <p className="muted why">{explain.why}</p>
     </div>

@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { VisualState } from "@/components/renderers/VisualState";
+import { formatValue, plainFromTyped } from "@/lib/format";
 import type { LanguageId } from "@/lib/languages";
+import { buildStepInsight } from "@/lib/step-insight";
 import type { TraceResponse, ViewMode } from "@/lib/trace-types";
 import { CodePanel } from "./CodePanel";
 import { ExplainPanel } from "./ExplainPanel";
 import { PlaybackBar } from "./PlaybackBar";
+import { StepInsightPanel } from "./StepInsight";
 import { WhatChanged } from "./WhatChanged";
 
 type Props = {
@@ -39,7 +42,7 @@ export function Visualizer({ trace, mode }: Props) {
 
   useEffect(() => {
     if (!playing || total === 0) return;
-    const ms = 850 / speed;
+    const ms = 900 / speed;
     const id = window.setInterval(() => {
       setIndex((prev) => {
         if (prev >= total - 1) {
@@ -80,6 +83,19 @@ export function Visualizer({ trace, mode }: Props) {
       ? lines[step.line - 1]
       : "";
 
+  const insight = useMemo(() => {
+    if (!step) return null;
+    return buildStepInsight(lineText, step.locals, step.changes);
+  }, [step, lineText]);
+
+  const resultSoFar = useMemo(() => {
+    if (!step) return undefined;
+    for (const key of ["result", "ans", "answer", "output", "res"]) {
+      if (key in step.locals) return plainFromTyped(step.locals[key]);
+    }
+    return undefined;
+  }, [step]);
+
   if (total === 0) {
     return (
       <div className="visualizer empty">
@@ -118,9 +134,27 @@ export function Visualizer({ trace, mode }: Props) {
         onScrub={go}
       />
       <p className="playback-hint">
-        Pause anytime. Use <strong>Next step</strong> / <strong>Prev</strong>,
-        the scrubber, or keyboard ← → and Space to study each line.
+        Go one line at a time. Read the green <strong>This step</strong> panel
+        before clicking Next — it shows the real numbers behind the line.
       </p>
+
+      <StepInsightPanel
+        insight={insight}
+        stepLabel={`Step ${index + 1}/${total} · line ${step?.line ?? "?"}`}
+      />
+
+      {resultSoFar !== undefined && (
+        <div className="running-result">
+          <span className="panel-label">Result so far</span>
+          <code>{formatValue(resultSoFar)}</code>
+          {index < total - 1 && (
+            <span className="muted">
+              {" "}
+              — watch this grow; final answer appears at the last step
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="viz-main">
         <CodePanel
@@ -153,12 +187,15 @@ export function Visualizer({ trace, mode }: Props) {
 
       {trace.result !== undefined && trace.result !== null && (
         <div className="result-bar">
-          <span className="panel-label">Final result</span>{" "}
+          <span className="panel-label">Final result (end of run)</span>{" "}
           <code>{JSON.stringify(trace.result)}</code>
           {index === total - 1 ? (
-            <span className="muted"> — algorithm finished</span>
+            <span className="muted"> — you are on the last step</span>
           ) : (
-            <span className="muted"> — available when you reach the last step</span>
+            <span className="muted">
+              {" "}
+              — compare with “Result so far” to see how extras got appended
+            </span>
           )}
         </div>
       )}

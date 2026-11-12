@@ -17,33 +17,51 @@ export function ArrayRenderer({
 }: Props) {
   const shown = items.slice(0, 50);
   const truncated = items.length > 50;
+  const compact = shown.length > 0 && shown.length <= 12;
+
+  const isOutput = /^(result|ans|answer|output|res|out)$/i.test(name);
 
   return (
-    <div className="renderer-block">
+    <div className={`renderer-block array-block ${isOutput ? "array-block-output" : ""}`}>
       <div className="renderer-title">
         {name}{" "}
-        <span className="type-tag">array · {items.length}</span>
+        <span className="type-tag">
+          {isOutput ? "output" : "array"} · {items.length}
+        </span>
+        {isOutput && (
+          <code className="array-inline-value">{formatValue(items)}</code>
+        )}
       </div>
-      <div className="array-scroll" tabIndex={0} aria-label={`${name} array`}>
-        <div className="array-track">
+      <div
+        className={`array-scroll ${compact ? "array-scroll-wrap" : ""}`}
+        tabIndex={0}
+        aria-label={`${name} array`}
+      >
+        <div className={`array-track ${compact ? "array-track-wrap" : ""}`}>
           {shown.map((item, idx) => {
-            const flash = highlightIndices?.has(idx);
-            const labels = Object.entries(pointers)
+            const pointed = Object.entries(pointers)
               .filter(([, pos]) => pos === idx)
               .map(([label]) => label);
+            const flash = highlightIndices?.has(idx);
+            const active = pointed.length > 0;
             return (
               <div key={`${name}-${idx}`} className="array-col">
                 <div
-                  className={`cell-3d ${flash ? "flash" : ""}`}
-                  style={{ animationDelay: `${Math.min(idx, 12) * 30}ms` }}
+                  className={[
+                    "array-cell",
+                    active ? "array-cell-active" : "",
+                    flash ? "array-cell-flash" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
                 >
-                  <div className="array-index">{idx}</div>
+                  <div className="array-index">[{idx}]</div>
                   <div className="array-value">{formatValue(item)}</div>
                 </div>
                 <div className="pointer-slot">
-                  {labels.map((label) => (
-                    <span key={label} className="pointer-label">
-                      ^{label}
+                  {pointed.map((label) => (
+                    <span key={label} className="pointer-badge">
+                      {label}
                     </span>
                   ))}
                 </div>
@@ -52,7 +70,7 @@ export function ArrayRenderer({
           })}
           {truncated && (
             <div className="array-col">
-              <div className="cell-3d muted">
+              <div className="array-cell muted">
                 <div className="array-index">…</div>
                 <div className="array-value">+{items.length - 50}</div>
               </div>
@@ -60,8 +78,18 @@ export function ArrayRenderer({
           )}
         </div>
       </div>
-      {items.length > 6 && (
-        <div className="scroll-hint muted">Scroll sideways to see every element</div>
+      {Object.keys(pointers).length > 0 && (
+        <div className="pointer-legend muted">
+          Pointers on this array:{" "}
+          {Object.entries(pointers)
+            .map(([k, v]) => `${k}=${v}`)
+            .join(", ")}
+        </div>
+      )}
+      {!compact && items.length > 6 && (
+        <div className="scroll-hint muted">
+          Scroll sideways to see every element
+        </div>
       )}
     </div>
   );

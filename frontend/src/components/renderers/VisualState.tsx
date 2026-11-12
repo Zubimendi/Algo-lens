@@ -2,6 +2,10 @@
 
 import type { ReactNode } from "react";
 import { POINTER_NAMES, plainFromTyped } from "@/lib/format";
+import {
+  changedListIndices,
+  pointersForArray,
+} from "@/lib/step-insight";
 import type { Change, TypedValue } from "@/lib/trace-types";
 import { ArrayRenderer } from "./ArrayRenderer";
 import { DictRenderer } from "./DictRenderer";
@@ -21,10 +25,10 @@ type Props = {
 };
 
 export function VisualState({ locals, changes, muteUnchanged }: Props) {
-  const pointers: Record<string, number> = {};
+  const allPointers: Record<string, number> = {};
   for (const [name, tv] of Object.entries(locals)) {
     if (POINTER_NAMES.has(name) && tv.type === "int" && typeof tv.value === "number") {
-      pointers[name] = tv.value;
+      allPointers[name] = tv.value;
     }
   }
 
@@ -37,7 +41,25 @@ export function VisualState({ locals, changes, muteUnchanged }: Props) {
     structures.push(node);
   };
 
-  for (const [name, tv] of Object.entries(locals)) {
+  // Show result/output first so it never gets clipped under tall inputs
+  const entries = Object.entries(locals).sort(([a], [b]) => {
+    const score = (n: string) =>
+      /^(result|ans|answer|output|res|out)$/i.test(n)
+        ? 0
+        : /^(nums?|numbers|words|arr)/i.test(n)
+          ? 1
+          : 2;
+    return score(a) - score(b);
+  });
+
+  const resultEntry = entries.find(([n]) =>
+    /^(result|ans|answer|output|res|out)$/i.test(n),
+  );
+  const resultPlain = resultEntry
+    ? plainFromTyped(resultEntry[1])
+    : undefined;
+
+  for (const [name, tv] of entries) {
     switch (tv.type) {
       case "matrix": {
         const rows = (plainFromTyped(tv) as unknown[][]) || [];
@@ -80,6 +102,10 @@ export function VisualState({ locals, changes, muteUnchanged }: Props) {
       case "list":
       case "tuple": {
         const items = (plainFromTyped(tv) as unknown[]) || [];
+        const pointers = pointersForArray(name, items.length, allPointers);
+        const highlights = changedListIndices(name, changes);
+        // Also highlight pointer cells
+        for (const idx of Object.values(pointers)) highlights.add(idx);
         push(
           name,
           <ArrayRenderer
@@ -87,18 +113,21 @@ export function VisualState({ locals, changes, muteUnchanged }: Props) {
             name={name}
             items={items}
             pointers={pointers}
+            highlightIndices={highlights}
           />,
         );
         break;
       }
       case "str": {
         if (typeof tv.value === "string" && tv.value.length > 1) {
+          const items = tv.value.split("");
+          const pointers = pointersForArray(name, items.length, allPointers);
           push(
             name,
             <ArrayRenderer
               key={name}
               name={name}
-              items={tv.value.split("")}
+              items={items}
               pointers={pointers}
             />,
           );
@@ -140,8 +169,18 @@ export function VisualState({ locals, changes, muteUnchanged }: Props) {
 
   return (
     <div className="visual-state">
+      {resultEntry && (
+        <div className="result-pinned">
+          <span className="panel-label">{resultEntry[0]} now</span>
+          <code className="result-pinned-value">
+            {JSON.stringify(resultPlain)}
+          </code>
+        </div>
+      )}
       {structures.length === 0 && (
-        <div className="muted">No structured values to draw yet — check the variable table.</div>
+        <div className="muted">
+          No structured values to draw yet — check the variable table.
+        </div>
       )}
       {structures}
       <VariableTable

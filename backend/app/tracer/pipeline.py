@@ -17,7 +17,7 @@ from app.languages.python_lang import (
 )
 from app.tracer.annotator import annotate_steps
 from app.tracer.differ import diff_locals
-from app.tracer.normalizer import Normalizer
+from app.tracer.normalizer import Normalizer, plain_value
 from app.tracer.sandbox import run_in_sandbox
 from app.tracer.validate import ValidationError, find_entry_method, parse_input, validate_code
 
@@ -72,16 +72,13 @@ def build_trace(
         locals_raw = _prepare_locals(raw_step.get("locals") or {})
         typed_locals = normalizer.normalize_locals(locals_raw)
         changes = diff_locals(prev_locals, typed_locals) if i > 0 or prev_locals else []
-        # First step: treat all as added
+        # First step: treat newly visible locals as added (always plain values)
         if not prev_locals and typed_locals:
             changes = [
                 {
                     "name": name,
                     "before": None,
-                    "after": typed_locals[name].get("value")
-                    if typed_locals[name]["type"]
-                    in {"int", "float", "bool", "str", "none"}
-                    else typed_locals[name],
+                    "after": plain_value(typed_locals[name]),
                     "kind": "added",
                 }
                 for name in sorted(typed_locals.keys())

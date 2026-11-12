@@ -104,8 +104,11 @@ def _explain_node(node: ast.AST, source: str) -> dict[str, str]:
         }
     if isinstance(node, ast.Break):
         return {
-            "what": "Break out of the nearest loop.",
-            "why": "Stop iterating early once the goal is met.",
+            "what": "Break out of the nearest (innermost) loop only.",
+            "why": (
+                "An outer loop can still keep going. If you expected to stop "
+                "the whole search, you may need to return — or reset the inner index."
+            ),
             "kind": "break",
         }
     if isinstance(node, ast.Continue):
@@ -115,6 +118,20 @@ def _explain_node(node: ast.AST, source: str) -> dict[str, str]:
             "kind": "continue",
         }
     if isinstance(node, ast.Expr):
+        call = node.value if isinstance(node.value, ast.Call) else None
+        if (
+            call
+            and isinstance(call.func, ast.Attribute)
+            and call.func.attr == "append"
+        ):
+            return {
+                "what": f"Append a value onto {_fmt_expr(call.func.value)}.",
+                "why": (
+                    "This grows the answer/list. Extra appends across later loop "
+                    "iterations are why a result can become longer than expected."
+                ),
+                "kind": "append",
+            }
         return {
             "what": "Evaluate this expression / call.",
             "why": "Perform a side effect or compute a value used by the next steps.",

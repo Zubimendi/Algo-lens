@@ -45,12 +45,27 @@ export function plainFromTyped(v: TypedValue | undefined): unknown {
   }
 }
 
+/** Unwrap accidental typed payloads that leaked into change.before/after. */
+export function coercePlain(value: unknown): unknown {
+  if (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    "type" in value &&
+    "value" in value
+  ) {
+    return plainFromTyped(value as TypedValue);
+  }
+  return value;
+}
+
 export function formatValue(value: unknown): string {
-  if (typeof value === "string") return JSON.stringify(value);
+  const plain = coercePlain(value);
+  if (typeof plain === "string") return JSON.stringify(plain);
   try {
-    return JSON.stringify(value);
+    return JSON.stringify(plain);
   } catch {
-    return String(value);
+    return String(plain);
   }
 }
 

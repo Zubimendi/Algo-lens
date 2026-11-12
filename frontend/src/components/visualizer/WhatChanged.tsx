@@ -8,6 +8,10 @@ type Props = {
 };
 
 export function WhatChanged({ changes }: Props) {
+  // Prefer real mutations; if the only rows are first-frame "added", show a short summary
+  const meaningful = changes.filter((c) => c.kind === "changed" || c.kind === "removed");
+  const shown = meaningful.length > 0 ? meaningful : changes.slice(0, 4);
+
   return (
     <div className="what-changed">
       <div className="panel-label">What changed this step</div>
@@ -15,7 +19,7 @@ export function WhatChanged({ changes }: Props) {
         <div className="muted">No variable changes this step.</div>
       ) : (
         <div className="change-list">
-          {changes.map((c) => (
+          {shown.map((c) => (
             <div key={`${c.name}-${c.kind}`} className="change-chip">
               <strong>{c.name}</strong>
               {c.kind === "added" && (
@@ -40,6 +44,9 @@ export function WhatChanged({ changes }: Props) {
               )}
             </div>
           ))}
+          {meaningful.length === 0 && changes.length > shown.length && (
+            <div className="muted">+{changes.length - shown.length} more locals entered scope</div>
+          )}
         </div>
       )}
     </div>
