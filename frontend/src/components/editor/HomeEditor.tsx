@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { AppNav } from "@/components/AppNav";
 import { CodeEditor } from "@/components/editor/CodeEditor";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Visualizer } from "@/components/visualizer/Visualizer";
 import { fetchProblem, fetchProblems, runTrace } from "@/lib/api";
 import { LANGUAGES, type LanguageId } from "@/lib/languages";
@@ -32,8 +33,13 @@ const BLANK_INPUT = `{
 }`;
 
 export function HomeEditor() {
+  const searchParams = useSearchParams();
+  const problemFromQuery = searchParams.get("problem");
+
   const [problems, setProblems] = useState<ProblemSummary[]>([]);
-  const [selectedId, setSelectedId] = useState<string>(CUSTOM);
+  const [selectedId, setSelectedId] = useState<string>(
+    problemFromQuery || CUSTOM,
+  );
   const [detail, setDetail] = useState<ProblemDetail | null>(null);
   const [exampleIdx, setExampleIdx] = useState(0);
   const [code, setCode] = useState(BLANK_STARTER);
@@ -45,12 +51,19 @@ export function HomeEditor() {
   const [error, setError] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(true);
   const vizRef = useRef<HTMLElement | null>(null);
+  const appliedQuery = useRef<string | null>(null);
 
   useEffect(() => {
     fetchProblems()
       .then(setProblems)
       .catch((e: Error) => setError(e.message));
   }, []);
+
+  useEffect(() => {
+    if (!problemFromQuery || appliedQuery.current === problemFromQuery) return;
+    appliedQuery.current = problemFromQuery;
+    setSelectedId(problemFromQuery);
+  }, [problemFromQuery]);
 
   useEffect(() => {
     if (selectedId === CUSTOM) {
@@ -127,69 +140,69 @@ export function HomeEditor() {
 
   return (
     <div className="app-shell">
-      <header className="top-bar">
-        <div className="brand">AlgoLens</div>
-        <div className="top-controls">
-          <label className="field">
-            Language
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value as LanguageId)}
-            >
-              {LANGUAGES.map((l) => (
-                <option
-                  key={l.id}
-                  value={l.id}
-                  disabled={l.status !== "supported"}
-                >
-                  {l.label}
-                  {l.status === "coming_soon" ? " (soon)" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            Load example
-            <select
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-            >
-              <option value={CUSTOM}>Custom (paste your own)</option>
-              {problems.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.title}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            Example input
-            <select
-              value={exampleIdx}
-              onChange={(e) => onExampleChange(Number(e.target.value))}
-              disabled={!detail}
-            >
-              {!detail && <option value={0}>—</option>}
-              {(detail?.examples || []).map((ex, i) => (
-                <option key={ex.label} value={i}>
-                  {ex.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            Teaching mode
-            <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value as ViewMode)}
-            >
-              <option value="beginner">Beginner</option>
-              <option value="standard">Standard</option>
-            </select>
-          </label>
-          <ThemeToggle />
-        </div>
-      </header>
+      <AppNav
+        trailing={
+          <>
+            <label className="field">
+              Language
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as LanguageId)}
+              >
+                {LANGUAGES.map((l) => (
+                  <option
+                    key={l.id}
+                    value={l.id}
+                    disabled={l.status !== "supported"}
+                  >
+                    {l.label}
+                    {l.status === "coming_soon" ? " (soon)" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              Load example
+              <select
+                value={selectedId}
+                onChange={(e) => setSelectedId(e.target.value)}
+              >
+                <option value={CUSTOM}>Custom (paste your own)</option>
+                {problems.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              Example input
+              <select
+                value={exampleIdx}
+                onChange={(e) => onExampleChange(Number(e.target.value))}
+                disabled={!detail}
+              >
+                {!detail && <option value={0}>—</option>}
+                {(detail?.examples || []).map((ex, i) => (
+                  <option key={ex.label} value={i}>
+                    {ex.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              Teaching mode
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as ViewMode)}
+              >
+                <option value="beginner">Beginner</option>
+                <option value="standard">Standard</option>
+              </select>
+            </label>
+          </>
+        }
+      />
 
       <section className="app-section" aria-labelledby="write-title">
         <div className="section-header">

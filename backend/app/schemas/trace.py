@@ -83,6 +83,7 @@ class ProblemSummary(BaseModel):
     title: str
     description: str
     rendererFocus: list[str] = Field(default_factory=list)
+    patterns: list[str] = Field(default_factory=list)
 
 
 class ProblemDetail(ProblemSummary):

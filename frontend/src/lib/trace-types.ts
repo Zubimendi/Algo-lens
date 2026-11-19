@@ -47,6 +47,7 @@ export type ProblemSummary = {
   title: string;
   description: string;
   rendererFocus: string[];
+  patterns?: string[];
 };
 
 export type ProblemExample = {

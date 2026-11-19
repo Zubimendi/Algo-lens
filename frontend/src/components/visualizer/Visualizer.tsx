@@ -5,6 +5,13 @@ import { VisualState } from "@/components/renderers/VisualState";
 import { formatValue, plainFromTyped } from "@/lib/format";
 import type { LanguageId } from "@/lib/languages";
 import { buildStepInsight } from "@/lib/step-insight";
+import {
+  beatIndexForStep,
+  buildStoryBeats,
+  skippedBetween,
+  snapToBeat,
+  type PlaybackMode,
+} from "@/lib/story-beats";
 import type { TraceResponse, ViewMode } from "@/lib/trace-types";
 import { CodePanel } from "./CodePanel";
 import { ExplainPanel } from "./ExplainPanel";
@@ -19,41 +26,92 @@ type Props = {
 
 export function Visualizer({ trace, mode }: Props) {
   const language = (trace.language || "python") as LanguageId;
-  const [index, setIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [playbackMode, setPlaybackMode] = useState<PlaybackMode>("story");
 
-  const total = trace.steps.length;
-  const step = trace.steps[index];
+  const beats = useMemo(
+    () => buildStoryBeats(trace.steps),
+    [trace.steps],
+  );
+  const storyAvailable =
+    trace.steps.length > 12 && beats.length < trace.steps.length;
+
+  const totalLines = trace.steps.length;
+  const beatIdx = beatIndexForStep(beats, stepIndex);
+  const step = trace.steps[stepIndex];
+
+  // Navigation list depends on mode
+  const navCount = playbackMode === "story" ? beats.length : totalLines;
+  const navIndex = playbackMode === "story" ? beatIdx : stepIndex;
 
   useEffect(() => {
-    setIndex(0);
+    setStepIndex(0);
     setPlaying(false);
+    setPlaybackMode(trace.steps.length > 12 ? "story" : "lines");
   }, [trace]);
 
-  const go = useCallback(
+  const goToStep = useCallback(
     (next: number) => {
-      if (total === 0) return;
+      if (totalLines === 0) return;
       setPlaying(false);
-      setIndex(Math.max(0, Math.min(total - 1, next)));
+      setStepIndex(Math.max(0, Math.min(totalLines - 1, next)));
     },
-    [total],
+    [totalLines],
+  );
+
+  const goNav = useCallback(
+    (nextNav: number) => {
+      setPlaying(false);
+      if (playbackMode === "story") {
+        const clamped = Math.max(0, Math.min(beats.length - 1, nextNav));
+        setStepIndex(beats[clamped]?.stepIndex ?? 0);
+      } else {
+        goToStep(nextNav);
+      }
+    },
+    [playbackMode, beats, goToStep],
+  );
+
+  const setMode = useCallback(
+    (next: PlaybackMode) => {
+      setPlaying(false);
+      setPlaybackMode(next);
+      if (next === "story") {
+        setStepIndex((i) => snapToBeat(beats, i));
+      }
+    },
+    [beats],
   );
 
   useEffect(() => {
-    if (!playing || total === 0) return;
-    const ms = 900 / speed;
+    if (!playing || navCount === 0) return;
+    // Story holds a beat longer so it feels like a watchable sequence
+    const base = playbackMode === "story" ? 1400 : 900;
+    const ms = base / speed;
     const id = window.setInterval(() => {
-      setIndex((prev) => {
-        if (prev >= total - 1) {
-          setPlaying(false);
-          return prev;
-        }
-        return prev + 1;
-      });
+      if (playbackMode === "story") {
+        setStepIndex((prev) => {
+          const bi = beatIndexForStep(beats, prev);
+          if (bi >= beats.length - 1) {
+            setPlaying(false);
+            return prev;
+          }
+          return beats[bi + 1].stepIndex;
+        });
+      } else {
+        setStepIndex((prev) => {
+          if (prev >= totalLines - 1) {
+            setPlaying(false);
+            return prev;
+          }
+          return prev + 1;
+        });
+      }
     }, ms);
     return () => window.clearInterval(id);
-  }, [playing, speed, total]);
+  }, [playing, speed, playbackMode, beats, navCount, totalLines]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -61,10 +119,10 @@ export function Visualizer({ trace, mode }: Props) {
       if (tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return;
       if (e.key === "ArrowRight") {
         e.preventDefault();
-        go(index + 1);
+        goNav(navIndex + 1);
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
-        go(index - 1);
+        goNav(navIndex - 1);
       } else if (e.key === " ") {
         e.preventDefault();
         setPlaying((p) => !p);
@@ -72,7 +130,7 @@ export function Visualizer({ trace, mode }: Props) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [go, index]);
+  }, [goNav, navIndex]);
 
   const lines = useMemo(
     () => trace.code.replace(/\n$/, "").split("\n"),
@@ -96,7 +154,16 @@ export function Visualizer({ trace, mode }: Props) {
     return undefined;
   }, [step]);
 
-  if (total === 0) {
+  const skipped = skippedBetween(beats, beatIdx);
+  const chapter =
+    playbackMode === "story" ? beats[beatIdx]?.reason : undefined;
+
+  const counterLabel =
+    playbackMode === "story"
+      ? `Beat ${beatIdx + 1}/${beats.length} · line ${step?.line ?? "?"}`
+      : `Step ${stepIndex + 1}/${totalLines} · line ${step?.line ?? "?"}`;
+
+  if (totalLines === 0) {
     return (
       <div className="visualizer empty">
         <p className="muted">
@@ -121,33 +188,64 @@ export function Visualizer({ trace, mode }: Props) {
       )}
 
       <PlaybackBar
-        index={index}
-        total={total}
+        index={navIndex}
+        total={navCount}
         playing={playing}
         speed={speed}
-        onFirst={() => go(0)}
-        onPrev={() => go(index - 1)}
-        onNext={() => go(index + 1)}
-        onLast={() => go(total - 1)}
+        mode={storyAvailable ? playbackMode : "lines"}
+        storyAvailable={storyAvailable}
+        counterLabel={counterLabel}
+        chapterLabel={chapter}
+        onFirst={() => goNav(0)}
+        onPrev={() => goNav(navIndex - 1)}
+        onNext={() => goNav(navIndex + 1)}
+        onLast={() => goNav(navCount - 1)}
         onTogglePlay={() => setPlaying((p) => !p)}
         onSpeed={setSpeed}
-        onScrub={go}
+        onScrub={goNav}
+        onMode={setMode}
       />
       <p className="playback-hint">
-        Go one line at a time. Read the green <strong>This step</strong> panel
-        before clicking Next — it shows the real numbers behind the line.
+        {playbackMode === "story" && storyAvailable ? (
+          <>
+            <strong>Story</strong> plays the teaching spine (
+            {beats.length} beats from {totalLines} lines). Press{" "}
+            <strong>Play</strong> for a watchable pass, or{" "}
+            <strong>Pause</strong> on any beat. Switch to{" "}
+            <strong>All lines</strong> when you want every step.
+            {skipped > 0 && (
+              <>
+                {" "}
+                <span className="muted">
+                  (skipped {skipped} routine line
+                  {skipped === 1 ? "" : "s"} since the last beat)
+                </span>
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            Go one line at a time. Read the green <strong>This step</strong>{" "}
+            panel before clicking Next — it shows the real numbers behind the
+            line.
+          </>
+        )}
       </p>
 
       <StepInsightPanel
         insight={insight}
-        stepLabel={`Step ${index + 1}/${total} · line ${step?.line ?? "?"}`}
+        stepLabel={
+          playbackMode === "story" && storyAvailable
+            ? `${chapter ?? "Beat"} · ${counterLabel}`
+            : counterLabel
+        }
       />
 
       {resultSoFar !== undefined && (
         <div className="running-result">
           <span className="panel-label">Result so far</span>
           <code>{formatValue(resultSoFar)}</code>
-          {index < total - 1 && (
+          {stepIndex < totalLines - 1 && (
             <span className="muted">
               {" "}
               — watch this grow; final answer appears at the last step
@@ -166,7 +264,7 @@ export function Visualizer({ trace, mode }: Props) {
           <div className="panel-label">Data structures (this step)</div>
           {step && (
             <VisualState
-              key={`state-${step.index}`}
+              key={`state-${step.index}-${playbackMode}`}
               locals={step.locals}
               changes={step.changes}
               muteUnchanged={mode === "beginner"}
@@ -189,7 +287,7 @@ export function Visualizer({ trace, mode }: Props) {
         <div className="result-bar">
           <span className="panel-label">Final result (end of run)</span>{" "}
           <code>{JSON.stringify(trace.result)}</code>
-          {index === total - 1 ? (
+          {stepIndex === totalLines - 1 ? (
             <span className="muted"> — you are on the last step</span>
           ) : (
             <span className="muted">

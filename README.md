@@ -12,6 +12,7 @@ Paste a Python solution and a test input, press Run, then step through every lin
 
 | Piece | Status |
 | --- | --- |
+| **Algorithm Studio** — study a pattern (animated lesson) then open related problems | Done (Sliding Window) |
 | **Custom paste → Run → visualize** any Python `Solution` / function | Done |
 | Syntax / validation errors surfaced before (or instead of) a trace | Done |
 | Dynamic line explanations from AST + real runtime values | Done |
@@ -22,7 +23,7 @@ Paste a Python solution and a test input, press Run, then step through every lin
 | LLM-generated explanations | Not in MVP (API stub returns `501`) |
 | Share links, compare-attempt, Chrome extension | Later |
 
-The product is **dynamic by default**: you paste code and input yourself. The three golden problems are only convenience loaders for demos—not a fixed catalog of what can be visualized.
+**Two entry points:** `/study` (pattern catalog → lesson → related problems) and `/visualize` (paste or load a problem → trace). The hub at `/` chooses between them.
 
 Stack: **Python 3.12 + FastAPI** backend, **Next.js 15 (App Router) + TypeScript** frontend.
 
@@ -62,18 +63,20 @@ Algo-lens/
 │   │   ├── api/routes/        # HTTP endpoints
 │   │   ├── tracer/            # validate, sandbox, runner, normalizer, differ, annotator
 │   │   ├── problems/          # Golden packs (code, examples, templates)
-│   │   └── schemas/           # Pydantic Trace models
+│   │   ├── patterns/          # Algorithm Studio packs (meta + SceneFrame lessons)
+│   │   └── schemas/           # Pydantic Trace / Pattern models
 │   ├── tests/golden/          # Acceptance tests
 │   ├── requirements.txt
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
-│   │   ├── app/               # Next.js App Router pages
+│   │   ├── app/               # Hub /, /study, /study/[id], /visualize
 │   │   ├── components/
-│   │   │   ├── editor/        # Home paste + Run UI
+│   │   │   ├── editor/        # Paste + Run UI
+│   │   │   ├── patterns/      # Catalog, lesson stage, Sliding Window viz
 │   │   │   ├── visualizer/    # Layout, playback, explain panels
 │   │   │   └── renderers/     # Array, dict, linked list, variables
-│   │   └── lib/               # API client + Trace types
+│   │   └── lib/               # API client + Trace / Pattern types
 │   ├── .env.local             # NEXT_PUBLIC_API_URL
 │   └── Dockerfile
 ├── docker-compose.yml
@@ -100,11 +103,11 @@ python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 export PYTHONPATH=.                # Windows (PowerShell): $env:PYTHONPATH="."
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8005
 ```
 
-Health check: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)  
-Interactive docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+Health check: [http://127.0.0.1:8005/health](http://127.0.0.1:8005/health)  
+Interactive docs: [http://127.0.0.1:8005/docs](http://127.0.0.1:8005/docs)
 
 ### 2. Frontend
 
@@ -114,7 +117,7 @@ In a second terminal:
 cd frontend
 npm install
 # frontend/.env.local should contain:
-# NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+# NEXT_PUBLIC_API_URL=http://127.0.0.1:8005
 npm run dev
 ```
 
@@ -129,7 +132,7 @@ docker compose up --build
 ```
 
 - Web: [http://localhost:3000](http://localhost:3000)
-- API: [http://localhost:8000](http://localhost:8000)
+- API: [http://localhost:8005](http://localhost:8005)
 
 ---
 
@@ -204,7 +207,7 @@ Each pack ships with starter code, ≥3 example inputs, and richer per-line temp
 
 ## API reference
 
-Base URL (local): `http://127.0.0.1:8000`
+Base URL (local): `http://127.0.0.1:8005`
 
 ### `GET /health`
 
@@ -284,7 +287,7 @@ Reserved for future LLM template generation. MVP always returns **501**.
 
 ### Try it quickly
 
-Use the interactive docs at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs), or from `backend/`:
+Use the interactive docs at [http://127.0.0.1:8005/docs](http://127.0.0.1:8005/docs), or from `backend/`:
 
 ```bash
 source .venv/bin/activate
@@ -349,7 +352,7 @@ npm run build
 
 | Variable | Where | Meaning |
 | --- | --- | --- |
-| `NEXT_PUBLIC_API_URL` | `frontend/.env.local` | Backend base URL (default `http://127.0.0.1:8000`) |
+| `NEXT_PUBLIC_API_URL` | `frontend/.env.local` | Backend base URL (default `http://127.0.0.1:8005`) |
 | `PYTHONPATH` | Backend shell | Must include `backend/` so `app.*` imports resolve |
 
 CORS is open (`*`) for local MVP development.

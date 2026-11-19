@@ -1,6 +1,7 @@
+import type { PatternDetail, PatternSummary } from "./pattern-types";
 import type { ProblemDetail, ProblemSummary, TraceResponse } from "./trace-types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8005";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
@@ -26,12 +27,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function fetchProblems(): Promise<ProblemSummary[]> {
-  return request("/api/v1/problems");
+export function fetchProblems(pattern?: string): Promise<ProblemSummary[]> {
+  const qs = pattern ? `?pattern=${encodeURIComponent(pattern)}` : "";
+  return request(`/api/v1/problems${qs}`);
 }
 
 export function fetchProblem(id: string): Promise<ProblemDetail> {
   return request(`/api/v1/problems/${id}`);
+}
+
+export function fetchPatterns(): Promise<PatternSummary[]> {
+  return request("/api/v1/patterns");
+}
+
+export function fetchPattern(id: string): Promise<PatternDetail> {
+  return request(`/api/v1/patterns/${id}`);
 }
 
 export function runTrace(body: {

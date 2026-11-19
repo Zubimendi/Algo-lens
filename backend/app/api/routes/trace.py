@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.languages import SUPPORTED_LANGUAGES
+from app.patterns import get_pattern, list_patterns
 from app.problems import get_problem, get_templates, list_problems
+from app.schemas.patterns import PatternDetail, PatternSummary, SceneFrame
 from app.schemas.trace import (
     ProblemDetail,
     ProblemExample,
@@ -28,9 +30,37 @@ def languages() -> list[dict[str, str]]:
     return list(SUPPORTED_LANGUAGES.values())
 
 
+@router.get("/api/v1/patterns", response_model=list[PatternSummary])
+def patterns() -> list[PatternSummary]:
+    return [PatternSummary(**p) for p in list_patterns()]
+
+
+@router.get("/api/v1/patterns/{pattern_id}", response_model=PatternDetail)
+def pattern_detail(pattern_id: str) -> PatternDetail:
+    pack = get_pattern(pattern_id)
+    if not pack:
+        raise HTTPException(status_code=404, detail=f"Unknown pattern: {pattern_id}")
+    return PatternDetail(
+        id=pack["id"],
+        title=pack["title"],
+        blurb=pack["blurb"],
+        tags=pack.get("tags", []),
+        complexity=pack.get("complexity", ""),
+        when=pack.get("when", []),
+        whenNot=pack.get("whenNot", []),
+        telltales=pack.get("telltales", []),
+        lesson=[SceneFrame(**frame) for frame in pack.get("lesson", [])],
+        relatedProblems=[
+            ProblemSummary(**p) for p in pack.get("relatedProblems", [])
+        ],
+    )
+
+
 @router.get("/api/v1/problems", response_model=list[ProblemSummary])
-def problems() -> list[ProblemSummary]:
-    return [ProblemSummary(**p) for p in list_problems()]
+def problems(
+    pattern: str | None = Query(default=None, description="Filter by pattern id"),
+) -> list[ProblemSummary]:
+    return [ProblemSummary(**p) for p in list_problems(pattern=pattern)]
 
 
 @router.get("/api/v1/problems/{problem_id}", response_model=ProblemDetail)
@@ -43,6 +73,7 @@ def problem_detail(problem_id: str) -> ProblemDetail:
         title=pack["title"],
         description=pack["description"],
         rendererFocus=pack.get("rendererFocus", []),
+        patterns=pack.get("patterns", []),
         starterCode=pack["starterCode"],
         examples=[ProblemExample(**ex) for ex in pack["examples"]],
     )
